@@ -29,8 +29,7 @@
             <Button Content="🔍 Сканировать устройства" 
                     Command="{Binding ScanCommand}"
                     Padding="15,8"
-                    FontSize="14"
-                    IsEnabled="{Binding IsScanning, Converter={StaticResource BoolToVisConverter}, ConverterParameter=!}">
+                    FontSize="14">
                 <Button.Style>
                     <Style TargetType="Button">
                         <Setter Property="Background" Value="#007ACC"/>
@@ -41,9 +40,10 @@
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter Property="Background" Value="#005A9E"/>
                             </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
+                            <DataTrigger Binding="{Binding IsScanning}" Value="True">
                                 <Setter Property="Background" Value="#CCCCCC"/>
-                            </Trigger>
+                                <Setter Property="IsEnabled" Value="False"/>
+                            </DataTrigger>
                         </Style.Triggers>
                     </Style>
                 </Button.Style>
