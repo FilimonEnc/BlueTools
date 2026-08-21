@@ -8,6 +8,7 @@ using System.Linq;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Enumeration;
 using Windows.Devices.Bluetooth.Advertisement;
+using Windows.Devices.Radios;
 
 namespace BlueTools.ViewModels;
 
@@ -18,7 +19,7 @@ public partial class BluetoothPageViewModel : ViewModelBase
 {
     private readonly ObservableCollection<BluetoothDevice> _newDevices = new();
     private readonly ObservableCollection<BluetoothDevice> _pairedDevices = new();
-    private BluetoothLEWatcher? _watcher;
+    private BluetoothLEAdvertisementWatcher? _watcher;
 
     public ObservableCollection<BluetoothDevice> NewDevices => _newDevices;
     public ObservableCollection<BluetoothDevice> PairedDevices => _pairedDevices;
@@ -51,40 +52,67 @@ public partial class BluetoothPageViewModel : ViewModelBase
         LoadPairedDevices();
     }
 
-    private void LoadPairedDevices()
+    private async void LoadPairedDevices()
     {
         _pairedDevices.Clear();
         
         try
         {
-            // Получаем все Bluetooth адаптеры
-            var adapters = BluetoothAdapter.GetAdapters();
-            
-            if (adapters.Count == 0)
-            {
-                StatusMessage = "Bluetooth адаптер не найден";
-                return;
-            }
+            // Используем DeviceInformation для поиска всех сопряженных Bluetooth устройств
+            // Это более надежный способ для Windows 10/11
+            var selector = Windows.Devices.Bluetooth.BluetoothLEDevice.GetDeviceSelectorFromPairingState(true);
+            var devices = await DeviceInformation.FindAllAsync(selector);
 
-            foreach (var adapter in adapters)
+            foreach (var devInfo in devices)
             {
-                // Получаем все сопряженные устройства для этого адаптера
-                var paired = adapter.GetPairedDevices();
-                
-                foreach (var device in paired)
+                try
                 {
-                    // Добавляем устройство, если его еще нет в списке
-                    if (_pairedDevices.All(d => d.Address != device.BluetoothAddress.ToString()))
+                    // Пытаемся получить адрес из свойств
+                    string address = "Unknown";
+                    
+                    if (devInfo.Properties.ContainsKey("System.Devices.Aep.DeviceAddress"))
                     {
+                        address = devInfo.Properties["System.Devices.Aep.DeviceAddress"]?.ToString() ?? "Unknown";
+                    }
+                    else
+                    {
+                        // Пробуем извлечь из ID устройства
+                        var idParts = devInfo.Id.Split('=');
+                        if (idParts.Length > 1)
+                        {
+                            address = idParts[1].Split('_')[0];
+                        }
+                    }
+
+                    // Проверяем, не добавлено ли уже устройство с таким адресом
+                    if (_pairedDevices.All(d => d.Address != address))
+                    {
+                        // Проверяем статус подключения
+                        bool isConnected = false;
+                        ulong addr = ParseBluetoothAddress(address);
+                        if (addr > 0)
+                        {
+                            var btDev = await Windows.Devices.Bluetooth.BluetoothLEDevice.FromBluetoothAddressAsync(addr);
+                            if (btDev != null)
+                            {
+                                isConnected = btDev.ConnectionStatus == BluetoothConnectionStatus.Connected;
+                                btDev.Dispose();
+                            }
+                        }
+
                         _pairedDevices.Add(new BluetoothDevice
                         {
-                            Name = string.IsNullOrEmpty(device.Name) ? "Неизвестное устройство" : device.Name,
-                            Address = device.BluetoothAddress.ToString(),
+                            Name = string.IsNullOrEmpty(devInfo.Name) ? "Неизвестное устройство" : devInfo.Name,
+                            Address = address,
                             IsPaired = true,
-                            IsConnected = device.ConnectionStatus == BluetoothConnectionStatus.Connected,
-                            Rssi = 0 // Для сопряженных устройств RSSI не доступен без подключения
+                            IsConnected = isConnected,
+                            Rssi = 0
                         });
                     }
+                }
+                catch
+                {
+                    // Игнорируем ошибки отдельных устройств
                 }
             }
 
@@ -108,8 +136,8 @@ public partial class BluetoothPageViewModel : ViewModelBase
 
         try
         {
-            // Создаем watcher для BLE устройств
-            _watcher = BluetoothLEAdvertisementWatcher.Create();
+            // Создаем watcher для BLE устройств - правильный способ без .Create()
+            _watcher = new BluetoothLEAdvertisementWatcher();
 
             _watcher.Received += async (sender, args) =>
             {
@@ -117,7 +145,7 @@ public partial class BluetoothPageViewModel : ViewModelBase
                 {
                     try
                     {
-                        var address = args.BluetoothAddress.ToString();
+                        var address = args.BluetoothAddress.ToString("X12");
                         
                         // Проверяем, не является ли устройство уже сопряженным
                         var isPaired = _pairedDevices.Any(d => d.Address == address);
@@ -127,7 +155,7 @@ public partial class BluetoothPageViewModel : ViewModelBase
                         {
                             var name = args.Advertisement.LocalName;
                             if (string.IsNullOrEmpty(name))
-                                name = $"Устройство {address.Substring(address.Length - 5)}";
+                                name = $"Устройство {address.Substring(Math.Max(0, address.Length - 5))}";
 
                             _newDevices.Add(new BluetoothDevice
                             {
@@ -184,28 +212,33 @@ public partial class BluetoothPageViewModel : ViewModelBase
             StatusMessage = $"Подключение к {device.Name}...";
             
             // Парсим MAC адрес
-            if (!ulong.TryParse(device.Address.Replace(":", ""), 
-                System.Globalization.NumberStyles.HexNumber, null, out ulong bluetoothAddress))
+            ulong bluetoothAddress = ParseBluetoothAddress(device.Address);
+            if (bluetoothAddress == 0)
             {
                 StatusMessage = "Неверный формат адреса устройства";
                 return;
             }
 
             // Попытка подключения через BluetoothLEDevice
-            var bluetoothDevice = await BluetoothLEDevice.FromBluetoothAddressAsync(bluetoothAddress);
+            var bluetoothDevice = await Windows.Devices.Bluetooth.BluetoothLEDevice.FromBluetoothAddressAsync(bluetoothAddress);
 
             if (bluetoothDevice != null)
             {
                 device.IsConnected = bluetoothDevice.ConnectionStatus == BluetoothConnectionStatus.Connected;
-                device.IsPaired = true;
                 
-                // Обновляем списки
-                if (SelectedNewDevice != null)
+                // Если подключилось успешно, помечаем как сопряженное
+                if (device.IsConnected)
                 {
-                    _newDevices.Remove(device);
-                    if (_pairedDevices.All(d => d.Address != device.Address))
+                    device.IsPaired = true;
+                    
+                    // Обновляем списки
+                    if (SelectedNewDevice != null)
                     {
-                        _pairedDevices.Add(device);
+                        _newDevices.Remove(device);
+                        if (_pairedDevices.All(d => d.Address != device.Address))
+                        {
+                            _pairedDevices.Add(device);
+                        }
                     }
                 }
                 
@@ -242,15 +275,21 @@ public partial class BluetoothPageViewModel : ViewModelBase
             StatusMessage = $"Удаление {device.Name}...";
             
             // Находим устройство в системе для удаления сопряжения
-            var selector = $"System.DeviceInterface.Bluetooth.DeviceAddress:=\"{device.Address}\"";
-            var devices = await DeviceInformation.FindAllAsync(selector);
-            
-            if (devices.Count > 0)
+            ulong bluetoothAddress = ParseBluetoothAddress(device.Address);
+            if (bluetoothAddress == 0)
             {
-                var devInfo = devices[0];
-                if (devInfo.Pairing.CanUnpair)
+                StatusMessage = "Неверный адрес устройства";
+                return;
+            }
+
+            // Получаем устройство и пытаемся отменить сопряжение
+            var btDev = await Windows.Devices.Bluetooth.BluetoothLEDevice.FromBluetoothAddressAsync(bluetoothAddress);
+            
+            if (btDev != null)
+            {
+                if (btDev.Pairing.CanUnpair)
                 {
-                    var result = await devInfo.Pairing.UnpairAsync();
+                    var result = await btDev.Pairing.UnpairAsync();
                     if (result.Status == DeviceUnpairingResultStatus.Unpaired)
                     {
                         _pairedDevices.Remove(device);
@@ -265,12 +304,37 @@ public partial class BluetoothPageViewModel : ViewModelBase
                 {
                     StatusMessage = "Устройство не поддерживает отмену сопряжения программно.";
                 }
+                btDev.Dispose();
             }
             else
             {
-                // Если не нашли через запрос, просто удаляем из списка UI
-                _pairedDevices.Remove(device);
-                StatusMessage = $"Устройство {device.Name} удалено из списка.";
+                // Если не нашли через BluetoothLEDevice, пробуем через DeviceInformation
+                var selector = $"System.Devices.Aep.DeviceAddress:=\"{device.Address}\"";
+                var devices = await DeviceInformation.FindAllAsync(selector);
+                
+                if (devices.Count > 0)
+                {
+                    var devInfo = devices[0];
+                    if (devInfo.Pairing.CanUnpair)
+                    {
+                        var result = await devInfo.Pairing.UnpairAsync();
+                        if (result.Status == DeviceUnpairingResultStatus.Unpaired)
+                        {
+                            _pairedDevices.Remove(device);
+                            StatusMessage = $"Устройство {device.Name} удалено.";
+                        }
+                        else
+                        {
+                            StatusMessage = $"Не удалось удалить сопряжение: {result.Status}";
+                        }
+                    }
+                }
+                else
+                {
+                    // Просто удаляем из списка UI
+                    _pairedDevices.Remove(device);
+                    StatusMessage = $"Устройство {device.Name} удалено из списка.";
+                }
             }
         }
         catch (Exception ex)
@@ -298,5 +362,20 @@ public partial class BluetoothPageViewModel : ViewModelBase
         
         System.Windows.MessageBox.Show(message, $"Сведения: {device.Name}", 
             System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+    }
+
+    private ulong ParseBluetoothAddress(string address)
+    {
+        if (string.IsNullOrEmpty(address)) return 0;
+        
+        // Очищаем от разделителей
+        var clean = address.Replace(":", "").Replace("-", "").Replace(" ", "");
+        
+        if (ulong.TryParse(clean, System.Globalization.NumberStyles.HexNumber, null, out ulong result))
+        {
+            return result;
+        }
+        
+        return 0;
     }
 }
