@@ -1,7 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using BlueTools.Models;
-using BlueTools.Commands;
 
 namespace BlueTools.ViewModels;
 
@@ -26,16 +25,16 @@ public partial class BluetoothPageViewModel : ViewModelBase
     private bool _isScanning;
 
     public IRelayCommand ScanCommand { get; }
-    public RelayCommand<BluetoothDevice> ConnectCommand { get; }
-    public RelayCommand<BluetoothDevice> ForgetCommand { get; }
-    public RelayCommand<BluetoothDevice> DetailsCommand { get; }
+    public IRelayCommand<BluetoothDevice?> ConnectCommand { get; }
+    public IRelayCommand<BluetoothDevice?> ForgetCommand { get; }
+    public IRelayCommand<BluetoothDevice?> DetailsCommand { get; }
 
     public BluetoothPageViewModel()
     {
-        ScanCommand = new RelayCommand(async _ => await ScanAsync());
-        ConnectCommand = new RelayCommand<BluetoothDevice>(ConnectDevice);
-        ForgetCommand = new RelayCommand<BluetoothDevice>(ForgetDevice);
-        DetailsCommand = new RelayCommand<BluetoothDevice>(ShowDetails);
+        ScanCommand = new AsyncRelayCommand(ScanAsync);
+        ConnectCommand = new RelayCommand<BluetoothDevice?>(ConnectDevice);
+        ForgetCommand = new RelayCommand<BluetoothDevice?>(ForgetDevice);
+        DetailsCommand = new RelayCommand<BluetoothDevice?>(ShowDetails);
 
         // Добавим тестовые данные для демонстрации
         LoadSampleData();
