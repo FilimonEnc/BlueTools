@@ -3,13 +3,12 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:BlueTools"
         xmlns:vm="clr-namespace:BlueTools.ViewModels"
         xmlns:views="clr-namespace:BlueTools.Views"
         mc:Ignorable="d"
         Title="BlueTools - Bluetooth Manager" Height="600" Width="1000"
         WindowStartupLocation="CenterScreen">
-    
+
     <Window.Resources>
         <!-- Стиль для кнопок навигации -->
         <Style x:Key="NavButtonStyle" TargetType="Button">
@@ -27,16 +26,9 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-
-        <!-- Конвертер для определения активной страницы -->
-        <BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
     </Window.Resources>
 
     <Grid>
-        <Grid.DataContext>
-            <vm:MainViewModel/>
-        </Grid.DataContext>
-
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="220"/>
             <ColumnDefinition Width="*"/>
@@ -96,7 +88,7 @@
             <ContentControl Grid.Row="1" Content="{Binding CurrentPage}">
                 <ContentControl.Resources>
                     <DataTemplate DataType="{x:Type vm:BluetoothPageViewModel}">
-                        <views:BluetoothPageView DataContext="{Binding}"/>
+                        <views:BluetoothPageView/>
                     </DataTemplate>
                 </ContentControl.Resources>
             </ContentControl>

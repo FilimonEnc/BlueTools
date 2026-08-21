@@ -3,11 +3,13 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:vm="clr-namespace:BlueTools.ViewModels"
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800">
     
     <UserControl.Resources>
+        <!-- Конвертеры -->
+        <BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
+        
         <!-- Стиль для кнопок действий -->
         <Style x:Key="ActionButtonStyle" TargetType="Button">
             <Setter Property="Padding" Value="8,4"/>
@@ -28,7 +30,7 @@
                     Command="{Binding ScanCommand}"
                     Padding="15,8"
                     FontSize="14"
-                    IsEnabled="{Binding IsScanning, Converter={StaticResource InverseBoolConverter}, FallbackValue=True}">
+                    IsEnabled="{Binding IsScanning, Converter={StaticResource BoolToVisConverter}, ConverterParameter=!}">
                 <Button.Style>
                     <Style TargetType="Button">
                         <Setter Property="Background" Value="#007ACC"/>
@@ -47,7 +49,8 @@
                 </Button.Style>
             </Button>
             
-            <TextBlock Text="{Binding IsScanning, Converter={StaticResource BoolToTextConverter}, FallbackValue=''}" 
+            <TextBlock Visibility="{Binding IsScanning, Converter={StaticResource BoolToVisConverter}}" 
+                       Text="⏳ Сканирование..."
                        VerticalAlignment="Center" 
                        Margin="10,0,0,0"
                        Foreground="#666"/>

@@ -1,4 +1,5 @@
 using System.Windows;
+using BlueTools.ViewModels;
 
 namespace BlueTools;
 
@@ -10,5 +11,6 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        DataContext = new MainViewModel();
     }
 }
