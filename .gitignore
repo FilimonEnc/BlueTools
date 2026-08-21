@@ -1,34 +1,68 @@
 ```
 # Build artifacts
-*.o
-*.obj
 *.exe
 *.dll
+*.pdb
+*.obj
+*.lib
 *.so
-*.a
-*.out
+*.dylib
+bin/
+obj/
+Debug/
+Release/
+x64/
+x86/
 
 # Dependencies
 packages/
-bin/
-obj/
+node_modules/
+venv/
+.venv/
+__pycache__/
+*.egg-info/
 
-# Logs and temp files
-*.log
+# IDE
+.vs/
+.vscode/
+.idea/
+*.userprefs
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Temp files
 *.tmp
-*.swp
+*.temp
+*.log
+Thumbs.db
+.DS_Store
 
 # Environment
 .env
 .env.local
 *.env.*
 
-# Editors
-.vscode/
-.idea/
-*.userprefs
+# Output and distribution
+dist/
+build/
+target/
+out/
+_output/
 
-# OS generated files
-.DS_Store
-Thumbs.db
+# Testing
+*.test.dll
+TestResults/
+
+# Compression
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
 ```

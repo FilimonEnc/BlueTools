@@ -28,16 +28,16 @@ public partial class BluetoothPageViewModel : ViewModelBase
     private bool _isScanning;
 
     public IRelayCommand ScanCommand { get; }
-    public IRelayCommand<BluetoothDevice?> ConnectCommand { get; }
-    public IRelayCommand<BluetoothDevice?> ForgetCommand { get; }
-    public IRelayCommand<BluetoothDevice?> DetailsCommand { get; }
+    public IRelayCommand ConnectCommand { get; }
+    public IRelayCommand ForgetCommand { get; }
+    public IRelayCommand DetailsCommand { get; }
 
     public BluetoothPageViewModel()
     {
         ScanCommand = new AsyncRelayCommand(ScanAsync);
-        ConnectCommand = new RelayCommand<BluetoothDevice?>(ConnectDevice);
-        ForgetCommand = new RelayCommand<BluetoothDevice?>(ForgetDevice);
-        DetailsCommand = new RelayCommand<BluetoothDevice?>(ShowDetails);
+        ConnectCommand = new RelayCommand(ConnectDevice);
+        ForgetCommand = new RelayCommand(ForgetDevice);
+        DetailsCommand = new RelayCommand(ShowDetails);
 
         // Добавим тестовые данные для демонстрации
         LoadSampleData();
@@ -79,8 +79,12 @@ public partial class BluetoothPageViewModel : ViewModelBase
         }
     }
 
-    private void ConnectDevice(BluetoothDevice? device)
+    private void ConnectDevice()
     {
+        if (SelectedNewDevice == null && SelectedPairedDevice == null)
+            return;
+
+        var device = SelectedNewDevice ?? SelectedPairedDevice;
         if (device == null)
             return;
 
@@ -94,8 +98,9 @@ public partial class BluetoothPageViewModel : ViewModelBase
         }
     }
 
-    private void ForgetDevice(BluetoothDevice? device)
+    private void ForgetDevice()
     {
+        var device = SelectedNewDevice ?? SelectedPairedDevice;
         if (device == null)
             return;
 
@@ -104,8 +109,9 @@ public partial class BluetoothPageViewModel : ViewModelBase
         _newDevices.Remove(device);
     }
 
-    private void ShowDetails(BluetoothDevice? device)
+    private void ShowDetails()
     {
+        var device = SelectedNewDevice ?? SelectedPairedDevice;
         if (device == null)
             return;
 

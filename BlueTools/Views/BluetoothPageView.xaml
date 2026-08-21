@@ -81,12 +81,10 @@
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                         <Button Content="Подключить" 
-                                                Command="{Binding DataContext.ConnectCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                CommandParameter="{Binding}"
+                                                Command="{Binding DataContext.ConnectCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 Style="{StaticResource ActionButtonStyle}"/>
                                         <Button Content="Сведения" 
-                                                Command="{Binding DataContext.DetailsCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                CommandParameter="{Binding}"
+                                                Command="{Binding DataContext.DetailsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 Style="{StaticResource ActionButtonStyle}"/>
                                     </StackPanel>
                                 </DataTemplate>
@@ -117,16 +115,13 @@
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                         <Button Content="Подключить" 
-                                                Command="{Binding DataContext.ConnectCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                CommandParameter="{Binding}"
+                                                Command="{Binding DataContext.ConnectCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 Style="{StaticResource ActionButtonStyle}"/>
                                         <Button Content="Забыть" 
-                                                Command="{Binding DataContext.ForgetCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                CommandParameter="{Binding}"
+                                                Command="{Binding DataContext.ForgetCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 Style="{StaticResource ActionButtonStyle}"/>
                                         <Button Content="Сведения" 
-                                                Command="{Binding DataContext.DetailsCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                CommandParameter="{Binding}"
+                                                Command="{Binding DataContext.DetailsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 Style="{StaticResource ActionButtonStyle}"/>
                                     </StackPanel>
                                 </DataTemplate>
